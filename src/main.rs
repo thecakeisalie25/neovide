@@ -166,6 +166,18 @@ pub fn init_logger() {
     logger.start().expect("Could not start logger");
 }
 
+/// Fork to the background, if needed.
+/// 
+/// If this is a debug build, or the `--nofork` argument is present, this function will just return.    
+/// Otherwise, it will attempt to spawn another copy of neovide in the background, and then shut
+/// down this copy. 
+/// 
+/// If it can't find the path of the current executable, it will return without detaching.
+/// 
+/// # Panics
+/// 
+/// Panics if it can find the path of the current executable, but there was an error encountered
+/// trying to spawn a new copy of it.
 fn maybe_disown() {
     use std::{env, process};
 
