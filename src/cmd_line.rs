@@ -110,12 +110,27 @@ impl Default for CmdLineSettings {
     }
 }
 
+/// Parse command line arguments, and write them to [SETTINGS]
+///
+/// Modifies `neovim_args` to a list of the following:
+/// - The `no_tabs` flag, if present.
+/// - Each file from `files_to_open`.
+/// - Each argument that came after "--". (`neovim_args`' current value)
+///
+/// It also shell-quotes them, to make sure that arguments with spaces don't get broken up.
 pub fn handle_command_line_arguments(args: Vec<String>) -> Result<(), String> {
     let mut cmdline = CmdLineSettings::parse_from(args);
 
-    // The neovim_args in cmdline are unprocessed, actually add options to it
-    let maybe_tab_flag = (!cmdline.no_tabs).then(|| "-p".to_string());
+    // Right now, neovim_args in cmdline is strictly what came after the "--", but we also
+    // need to pass the list of files to open, and the -p flag if it's present.
+    let maybe_tab_flag = if cmdline.no_tabs {
+        None
+    } else {
+        Some("-p".to_string())
+    };
 
+    // Set up the actual list of args to pass to neovim, and shell-quote them.
+    // Otherwise when we call neovim, "some file.txt" may become "some" "file.txt".
     cmdline.neovim_args = maybe_tab_flag
         .into_iter()
         .chain(mem::take(&mut cmdline.files_to_open))
